@@ -28,7 +28,7 @@ class EventSlicer:
         self.h5f = h5f
 
         self.events = dict()
-        for dset_str in ['p', 'x', 'y', 't']:
+        for dset_str in ['p', 'x', 'y', 't']:#p:輝度の変化,　t:時間, xy:ピクセルの座標
             self.events[dset_str] = self.h5f['events/{}'.format(dset_str)]
 
         # This is the mapping from milliseconds to event index:
@@ -174,6 +174,7 @@ class EventSlicer:
         return self.ms_to_idx[time_ms]
 
 
+#シーケンスデータを格納する
 class Sequence(Dataset):
     def __init__(self, seq_path: Path, representation_type: RepresentationType, mode: str = 'test', delta_t_ms: int = 100,
                  num_bins: int = 4, transforms=[], name_idx=0, visualize=False, load_gt=False):
@@ -316,8 +317,12 @@ class Sequence(Dataset):
         assert y.max() < self.height
         return rectify_map[y, x]
     
-    def get_data(self, index) -> Dict[str, any]:
-        ts_start: int = self.timestamps_flow[index] - self.delta_t_us
+    def get_data(self, index) -> Dict[str, any]: #インデックスを受け取ってデータを作成
+        if index == 0:
+            frame = self.timestamps_flow[index]
+        else:
+            frame = self.timestamps_flow[index-1] #最初以外2フレーム受け取るように
+        ts_start: int = frame - self.delta_t_us
         ts_end: int = self.timestamps_flow[index]
 
         file_index = self.indices[index]
@@ -580,6 +585,7 @@ class DatasetProvider:
         logger.write_line("Number of Train Sequences: {}".format(
             len(self.train_dataset)), True)
 
+#トレーニング用のデータバッチを準備する
 def train_collate(sample_list):
     batch = dict()
     for field_name in sample_list[0]:
